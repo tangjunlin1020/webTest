@@ -1,0 +1,139 @@
+﻿1、查看Linux的版本
+cat /etc/redhat-release 
+
+2、查看系统情况,包括内存、硬盘使用情况
+top
+free -m
+df  -h
+
+
+3、系统的优化。系统文件的句柄数优化。
+### 1：文件句柄数不够
+
+#### 1：查看句柄数。
+
+```
+---查看系统默认的最大文件句柄数，系统默认是1024
+liunx中文件句柄有两个限制，一种是用户级的，一种是系统级的（也叫内核级）
+系统级的最大限制：
+#cat /proc/sys/fs/file-max
+
+用户级的最大限制（默认是1024，向阿里云华为云这种云主机一般是65535）
+#ulimit -n
+```
+
+#### 2：修改最大限制 
+
+##### 用户级的修改
+
+- 用户级修改临时生效方法：（重启后失效）
+
+```
+ulimit -SHu 655350
+echo ulimit -n 65535 >>/etc/profile 
+echo ulimit -SHn 655350 >>/etc/profile   
+
+```
+
+　　ulimit 命令分软限制和硬限制，加-H就是硬限制，加-S就是软限制。默认显示的是软限制，如果运行ulimit 命令修改时没有加上-H或-S，就是两个参数一起改变。硬限制就是实际的限制，而软限制是警告限制，它只会给出警告。
+
+- 用户级修改永久有效方式：
+
+```
+vim /etc/security/limits.conf
+```
+
+也可以直接加入：
+
+```
+*   *  nofile 655350
+*   *  nproc 655350
+或者
+* soft nofile 655350
+* hard nofile 655350
+```
+
+##### 系统级的修改：
+
+其实上面的修改都是对一个进程打开的文件句柄数量的限制，我们还需要设置系统的总限制才可以。
+
+假如，我们设置进程打开的文件句柄数是1024 ，但是系统总限制才500，所以所有进程最多能打开文件句柄数量500。从这里我们可以看出只设置进程的打开文件句柄的数量是不行的。所以需要修改系统的总限制才可以。
+
+- 系统级修改临时生效方式：
+
+```
+echo 655350 > /proc/sys/fs/file-max
+```
+
+- 系统级修改永久生效方式：
+
+```
+vim /etc/sysctl.conf
+```
+
+加入 fs.file-max=655350
+
+系统级永久生效方式修改后，重启服务器，才能生效。
+
+- 查看系统级文件句柄修改，是否生效
+
+sysctl -p
+
+
+4、查看host文件是否需要配置host文件
+cat /etc/hosts
+
+
+4、部署服务
+应用服务器、代码上传，配置环境jdk(如果没有就安装)
+
+5、启动应用服务器
+验证是否启动成功
+ps -ef|grep java
+tail -f logs/catalina.out 
+curl http://localhost:8080/uc/
+
+6、配置dns:
+vim /etc/sysconfig/network-scripts/ifcfg-eth0      
+注意：通过vim /etc/sysconfig/network-scripts/ifcfg-eth0方式增加DNS后，需要重启网卡（service network restart）
+在最后添加DNS1=211.136.112.50
+
+7、关闭防火墙。默认防火墙是开启状态。
+    一、CentOS 6.x
+关闭防火墙的命令：
+
+
+chkconfig iptables off
+1
+
+或
+
+
+service iptables stop
+
+
+   二、CentOS 7.x关闭防火墙的命令：
+
+
+systemctl  disable firewalld.service 
+1
+
+或
+
+
+systemctl  stop firewalld.service
+
+8、Linux安装telnet
+   1、检测telnet-server的rpm包是否安装 
+rpm -qa telnet-server
+若无输入内容，则表示没有安装。
+   2、若未安装，则安装telnet-server，否则忽略此步骤
+yum install telnet-server 　
+   3、检测telnet-server的rpm包是否安装 
+rpm -qa telnet
+若无输入内容，则表示没有安装。
+   4、若未安装，则安装telnet，否则忽略此步骤
+yum install telnet
+   5、检测telnet ip 端口
+
+
